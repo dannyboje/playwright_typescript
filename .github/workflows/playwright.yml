@@ -28,7 +28,7 @@ jobs:
           "text": "${{ job.status == 'success' && ':white_check_mark: *Job Passed!* ✅' || ':x: *Job Failed!* ❌' }}\n\n*Logs:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|Click here to view workflow logs>"
           }
       env:
-        SLACK_BOT_TOKEN: ${{ secrets.SLACK_WEBHOOK_URL }}
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       if: always()    
 
     - uses: actions/upload-artifact@v4
