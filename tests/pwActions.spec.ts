@@ -40,7 +40,7 @@ test ('Radio Button Actions', async ({page})=> {
 
 });
 
-test.only ('Checkboxes Actions', async ({page})=> {
+test ('Checkboxes Actions', async ({page})=> {
     await page.goto("https://testautomationpractice.blogspot.com/");
     
    //1. Select a specific Checkbox (Sunday)
