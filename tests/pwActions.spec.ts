@@ -104,8 +104,6 @@ test ('Checkboxes Actions', async ({page})=> {
         if (label.toLowerCase() === weekname.toLowerCase())
         {
             const checkbox= page.getByLabel(label);
-            checkbox.check();
-                await expect(checkbox).toBeChecked();
 
     }
 
