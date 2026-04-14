@@ -4,14 +4,17 @@ test ('Autosuggested dropdown', async ({page})=> {
     
     await  page.goto("https://www.flipkart.com/");
 
-    await page.waitForTimeout(2000);
-    let closeButton:Locator = page.locator('//span[@role="button"]');
+    waitUntil: 'domcontentloaded'  // less strict than 'load'
+    timeout: 60000 
+
+   /* let closeButton:Locator = page.locator('//span[@role="button"]');
     if (await closeButton.isVisible())
      {
       await page.keyboard.press('Escape');
       // await closeButton.click();
-    }
-
+    } */
+    await page.waitForTimeout(5000);
+    await page.keyboard.press('Escape');
     // Fill the visible search input and search
     await page.locator("input[name='q']:visible").fill("smart");
     await page.waitForTimeout(5000);

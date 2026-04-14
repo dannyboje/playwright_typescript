@@ -4,6 +4,9 @@ test ('Bootstrap hidden dropdown', async ({page})=> {
 
     await  page.goto("https://opensource-demo.orangehrmlive.com/web/index.php/auth/login");
 
+    waitUntil: 'domcontentloaded'  // less strict than 'load'
+    timeout: 60000 
+
     await page.locator('input[name="username"]').fill('Admin');
     await page.locator('input[name="password"]').fill('admin123');
     await page.locator('button[type="submit"]').click();
