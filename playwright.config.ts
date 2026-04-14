@@ -30,6 +30,21 @@ export default defineConfig({
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
+
+    /* Anti-bot detection disguise settings */
+    headless: true,
+    navigationTimeout: 60000,
+    actionTimeout: 30000,
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    launchOptions: {
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-blink-features=AutomationControlled',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+      ]
+    },
   },
 
   /* Configure projects for major browsers */
