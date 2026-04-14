@@ -12,7 +12,7 @@ test ('Bootstrap hidden dropdown', async ({page})=> {
     await page.locator('button[type="submit"]').click();
 
     //click on the PIM
-
+    await page.waitForTimeout(3000);
     await page.getByText('PIM').click();
     await page.locator('form i').nth(2).click();
     await page.waitForTimeout(3000);
