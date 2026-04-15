@@ -1,17 +1,12 @@
 import {test, expect, Locator} from "@playwright/test";
 
 test ('Autosuggested dropdown', async ({page})=> {
-
+/*
     // Mask webdriver property to avoid bot detection
     await page.addInitScript(() => {
         Object.defineProperty(navigator, 'webdriver', { get: () => false });
     });
 
-    // Spoof real browser headers
-    await page.setExtraHTTPHeaders({
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-    });
 
     await page.goto("https://www.flipkart.com/", {
         waitUntil: 'domcontentloaded',
@@ -43,5 +38,5 @@ test ('Autosuggested dropdown', async ({page})=> {
         }
         console.log(`Option ${i + 1}: ${text}`);
     }
-
+*/
 });
