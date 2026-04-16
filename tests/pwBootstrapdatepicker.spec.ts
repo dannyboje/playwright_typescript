@@ -146,5 +146,5 @@ test('Booking.com - Select dates without signing in', async ({ page }) => {
     await page.locator('[type="submit"]').click();
     await page.waitForLoadState('domcontentloaded');
     console.log('✅ Search submitted successfully');
-*/
-});
+
+});*/
