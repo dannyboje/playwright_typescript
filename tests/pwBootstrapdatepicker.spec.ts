@@ -1,150 +1,154 @@
-import { test, expect, Locator, Page } from "@playwright/test";
-/*
-// ─── Helper: Dismiss / Cancel any sign-in popup or page ───────────────────────
-async function dismissSignIn(page: Page) {
+import { test, expect } from '@playwright/test';
 
-    // Option 1: Dismiss overlay button
-    const dismissBtn: Locator = page.locator('[aria-label="Dismiss sign-in info."]');
-    if (await dismissBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-        console.log('Dismissing sign-in overlay...');
-        await dismissBtn.click();
-        return;
+test('Booking.com Date Picker Test - Check-in and Check-out', async ({ page }) => {
+  await page.goto('https://www.booking.com/');
+
+  // Handle cookie consent popup
+  try {
+    await page.locator('button:has-text("Accept")').click({ timeout: 5000 });
+    console.log('Cookie popup accepted');
+  } catch (e) {
+    console.log('Cookie popup not found, continuing...');
+  }
+
+  // Handle Genius / Sign-in popup
+  try {
+    const signInPopup = page.locator('[role="dialog"]').first();
+    if (await signInPopup.isVisible({ timeout: 5000 })) {
+      await page.keyboard.press('Escape');
+      console.log('Sign-in popup dismissed via Escape');
     }
+  } catch (e) {
+    console.log('Sign-in popup not found, continuing...');
+  }
 
-    // Option 2: Close button (X) on sign-in modal
-    const closeBtn: Locator = page.locator('[aria-label="Close"]');
-    if (await closeBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-        console.log('Closing sign-in modal...');
-        await closeBtn.click();
-        return;
-    }
+  await page.waitForLoadState('networkidle');
 
-    // Option 3: Press Escape to close any modal
-    console.log('Pressing Escape to dismiss sign-in...');
-    await page.keyboard.press('Escape');
-}
+  // Click on the date picker field to open calendar
+  await page.getByTestId('searchbox-dates-container').click();
+  await page.waitForTimeout(2000);
 
-// ─── Helper: month name → index ───────────────────────────────────────────────
-const MONTHS = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-];
+  // ---- DEBUG: log all h3 tags to find the right selector ----
+  const allH3 = await page.locator('h3').all();
+  for (const h3 of allH3) {
+    const text = await h3.innerText().catch(() => '');
+    const ariaLive = await h3.getAttribute('aria-live').catch(() => '');
+    const className = await h3.getAttribute('class').catch(() => '');
+    console.log(`H3 -> text: "${text}" | aria-live: "${ariaLive}" | class: "${className}"`);
+  }
 
-function toMonthIndex(month: string, year: string): number {
-    return parseInt(year) * 100 + MONTHS.indexOf(month);
-}
+  // Helper: get month/year using multiple fallback selectors
+  async function getMonthYear(index: number): Promise<string> {
+    const selectors = [
+      "h3[aria-live='polite']",                          // original
+      "h2[aria-live='polite']",                          // maybe h2 now
+      "[data-testid='searchbox-datepicker-calendar'] h3",
+      "[data-testid='searchbox-datepicker-calendar'] h2",
+      ".bui-calendar__month",
+      "[class*='month-name']",
+      "[class*='CalendarMonth'] strong",
+      "span[aria-live='polite']",
+      "[aria-live='polite']",                            // any element with aria-live
+    ];
 
-// ─── Helper: navigate calendar to target month ────────────────────────────────
-async function navigateToMonth(targetMonth: string, targetYear: string, page: Page) {
-    while (true) {
-
-        const headers     = await page.locator('.bui-calendar__month').allTextContents();
-        const leftHeader  = headers[0]?.trim().replace(/\s+/g, ' ');
-        const rightHeader = headers[1]?.trim().replace(/\s+/g, ' ');
-
-        const [leftMonth,  leftYear]  = leftHeader?.split(' ')  ?? [];
-        const [rightMonth, rightYear] = rightHeader?.split(' ') ?? [];
-
-        console.log(`Calendar: ${leftMonth} ${leftYear} | ${rightMonth} ${rightYear} | Target: ${targetMonth} ${targetYear}`);
-
-        const targetIndex = toMonthIndex(targetMonth, targetYear);
-        const leftIndex   = toMonthIndex(leftMonth  ?? '', leftYear  ?? '');
-        const rightIndex  = toMonthIndex(rightMonth ?? '', rightYear ?? '');
-
-        if (targetIndex === leftIndex || targetIndex === rightIndex) {
-            console.log(`✅ Target month ${targetMonth} ${targetYear} is visible`);
-            break;
+    for (const selector of selectors) {
+      try {
+        const els = await page.locator(selector).all();
+        if (els.length > index) {
+          const text = await els[index].innerText({ timeout: 2000 });
+          if (text?.trim()) {
+            console.log(`✅ Month/year selector that worked: "${selector}" -> "${text}"`);
+            return text.trim();
+          }
         }
-
-        if (targetIndex > leftIndex) {
-            console.log('→ Navigating forward...');
-            await page.locator('.bui-calendar__control--next').click();
-        } else {
-            console.log('← Navigating backward...');
-            await page.locator('.bui-calendar__control--prev').click();
-        }
-
-        await page.waitForTimeout(500);
+      } catch { /* try next */ }
     }
-}
+    throw new Error(`Could not find month/year header at index ${index}`);
+  }
 
-// ─── Helper: click a specific day in the calendar ─────────────────────────────
-async function selectDay(targetMonth: string, targetYear: string, targetDay: string, page: Page) {
+  // Helper: get date cells using multiple fallback selectors
+  async function getDateCells(index: number) {
+    const selectors = [
+      `table.b8fcb0c66a tbody`,
+      `[data-testid='searchbox-datepicker-calendar'] tbody`,
+      `.bui-calendar__dates tbody`,
+      `table tbody`,
+    ];
 
-    const allCells = page.locator('td[data-date]');
-    const count    = await allCells.count();
-
-    for (let i = 0; i < count; i++) {
-        const cell     = allCells.nth(i);
-        const dataDate = await cell.getAttribute('data-date');
-
-        if (!dataDate) continue;
-
-        const [yr, mo, dy] = dataDate.split('-');
-        const cellMonth    = MONTHS[parseInt(mo) - 1];
-        const cellYear     = yr;
-        const cellDay      = String(parseInt(dy));
-
-        if (cellMonth === targetMonth && cellYear === targetYear && cellDay === targetDay) {
-            await cell.click();
-            console.log(`✅ Clicked date: ${dataDate}`);
-            return;
+    for (const selector of selectors) {
+      try {
+        const tables = await page.locator(selector).all();
+        if (tables.length > index) {
+          const cells = await tables[index].locator('td').all();
+          if (cells.length > 0) {
+            console.log(`✅ Date cell selector that worked: "${selector}"`);
+            return cells;
+          }
         }
+      } catch { /* try next */ }
     }
+    throw new Error(`Could not find date cells at index ${index}`);
+  }
 
-    throw new Error(`❌ Day ${targetDay} ${targetMonth} ${targetYear} not found in calendar`);
-}
+  // ==== Check-in Date Selection ====
+  const checkinYear = "2026";
+  const checkinMonth = "June";
+  const checkinDay = "20";
 
-// ─── Main test ────────────────────────────────────────────────────────────────
-test('Booking.com - Select dates without signing in', async ({ page }) => {
+  while (true) {
+    const monthYear = await getMonthYear(0);
+    const [currentMonth, currentYear] = monthYear.split(" ");
+    console.log(`Check-in calendar: ${currentMonth} ${currentYear}`);
 
-    // 👇 Change these to any dates you want
-    const checkInYear   = "2026";
-    const checkInMonth  = "May";
-    const checkInDay    = "10";
+    if (currentMonth === checkinMonth && currentYear === checkinYear) break;
 
-    const checkOutYear  = "2026";
-    const checkOutMonth = "May";
-    const checkOutDay   = "15";
+    await page.locator('button[aria-label="Next month"]').click();
+    await page.waitForTimeout(500);
+  }
 
-    // ── Step 1: Go to Cardiff search results ──────────────────────────────────
-    await page.goto(
-        "https://www.booking.com/searchresults.en-gb.html?ss=Cardiff&checkin=2026-04-18&checkout=2026-04-19&group_adults=1&no_rooms=1&group_children=1&age=9",
-        { waitUntil: 'domcontentloaded', timeout: 60000 }
-    );
+  const checkinCells = await getDateCells(0);
+  let checkinDateSelected = false;
 
-    // ── Step 2: Dismiss sign-in if it appears ─────────────────────────────────
-    await dismissSignIn(page);
+  for (const cell of checkinCells) {
+    const text = (await cell.innerText()).trim();
+    if (text === checkinDay) {
+      await cell.click();
+      checkinDateSelected = true;
+      break;
+    }
+  }
 
-    // ── Step 3: Open the calendar ─────────────────────────────────────────────
-    console.log('Opening calendar...');
-    await page.locator('[data-testid="date-display-field-start"]').click();
+  expect(checkinDateSelected).toBeTruthy();
 
-    // ── Step 4: Dismiss sign-in again if clicking calendar triggered it ────────
-    await dismissSignIn(page);
+  // ==== Check-out Date Selection ====
+  const checkoutYear = "2026";
+  const checkoutMonth = "July";
+  const checkoutDay = "25";
 
-    await page.waitForSelector('.bui-calendar', { state: 'visible', timeout: 10000 });
+  while (true) {
+    const monthYear = await getMonthYear(1);
+    const [currentMonth, currentYear] = monthYear.split(" ");
+    console.log(`Check-out calendar: ${currentMonth} ${currentYear}`);
 
-    // ── Step 5: Select check-in date ──────────────────────────────────────────
-    console.log(`Navigating to check-in: ${checkInMonth} ${checkInYear}`);
-    await navigateToMonth(checkInMonth, checkInYear, page);
-    await selectDay(checkInMonth, checkInYear, checkInDay, page);
+    if (currentMonth === checkoutMonth && currentYear === checkoutYear) break;
 
-    // ── Step 6: Select check-out date ─────────────────────────────────────────
-    console.log(`Navigating to check-out: ${checkOutMonth} ${checkOutYear}`);
-    await navigateToMonth(checkOutMonth, checkOutYear, page);
-    await selectDay(checkOutMonth, checkOutYear, checkOutDay, page);
+    await page.locator('button[aria-label="Next month"]').click();
+    await page.waitForTimeout(500);
+  }
 
-    // ── Step 7: Verify dates ───────────────────────────────────────────────────
-    const checkInValue  = await page.locator('[data-testid="date-display-field-start"]').textContent();
-    const checkOutValue = await page.locator('[data-testid="date-display-field-end"]').textContent();
+  const checkoutCells = await getDateCells(1);
+  let checkoutDateSelected = false;
 
-    console.log(`✅ Check-in:  ${checkInValue?.trim()}`);
-    console.log(`✅ Check-out: ${checkOutValue?.trim()}`);
+  for (const cell of checkoutCells) {
+    const text = (await cell.innerText()).trim();
+    if (text === checkoutDay) {
+      await cell.click();
+      checkoutDateSelected = true;
+      break;
+    }
+  }
 
-    // ── Step 8: Submit search ──────────────────────────────────────────────────
-    await page.locator('[type="submit"]').click();
-    await page.waitForLoadState('domcontentloaded');
-    console.log('✅ Search submitted successfully');
+  expect(checkoutDateSelected).toBeTruthy();
 
-});*/
+  await page.waitForTimeout(5000);
+});
