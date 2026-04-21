@@ -15,10 +15,10 @@ export default defineConfig({
   testDir: './tests',
 
   //To change the timeout globally for all tests (defaults is 30000ms/30sec)
-  timeout: 60000,
+  // timeout: 60000,
 
   //To apply a longer wait for all expect conditions (default is 5000ms / 5 sec)
-   expect: {timeout : 10000},
+   //expect: {timeout : 10000},
 
   /* Run tests in files in parallel */
   fullyParallel: true,
@@ -61,7 +61,7 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
 
-   /* {
+    {
       name: 'firefox',
       use: { ...devices['Desktop Firefox'] },
     },
@@ -69,7 +69,7 @@ export default defineConfig({
     {
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
-    }, */
+    }, 
 
     /* Test against mobile viewports. */
     // {
