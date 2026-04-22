@@ -2,7 +2,8 @@ import{test,expect,Page} from "@playwright/test";
 
 test("Autowaiting and forcing", async ({page})=>{
 
-    test.setTimeout(50000); //60 secs
+    test.setTimeout(50000); //50 secs
+    // test.slow();
     
     // Assertion - Auto wait works
     await page.goto("https://demowebshop.tricentis.com/", {timeout:10000});
