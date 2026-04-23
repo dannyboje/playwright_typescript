@@ -31,7 +31,7 @@ test('Test 3', async ({page,browserName}) => {
     await expect(page).toHaveTitle('Google');
 })
 
-test.fail('Test 4', async ({page}) => {
+test ('Test 4', async ({page}) => {
     await page.goto('https://www.google.com/');
     await expect(page).toHaveTitle('Google');
 });
